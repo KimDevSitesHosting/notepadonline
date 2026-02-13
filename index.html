@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Notepad Online</title>
+    <style>
+        body {
+            background-color: #008080;
+            margin: 0;
+            overflow: hidden; 
+            height: 100vh;
+            display: flex; /* ใช้ Flexbox */
+            justify-content: center; /* กึ่งกลางแนวนอน */
+            align-items: center; /* กึ่งกลางแนวตั้ง */
+            font-family: 'Tahoma', sans-serif;
+        }
+
+        /* หน้าต่างหลัก - ปรับให้เริ่มที่กึ่งกลาง */
+        .window {
+            position: relative; /* เปลี่ยนจาก absolute เป็น relative เพื่อให้ Flexbox คุมได้ */
+            background-color: #c0c0c0;
+            width: 650px;
+            padding: 2px;
+            border-top: 2px solid #dfdfdf;
+            border-left: 2px solid #dfdfdf;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: 2px 2px 0px 0px #000; /* เงาเหลี่ยมๆ เข้มขึ้น */
+            user-select: none;
+        }
+
+        /* Title Bar */
+        .title-bar {
+            background: linear-gradient(90deg, #000080, #1084d0);
+            color: white;
+            padding: 3px 2px 3px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            cursor: move; /* เปลี่ยน cursor ให้รู้ว่าลากได้ */
+        }
+
+        .title-bar-controls button {
+            width: 16px;
+            height: 14px;
+            background-color: #c0c0c0;
+            border-top: 1px solid #ffffff;
+            border-left: 1px solid #ffffff;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            font-size: 9px;
+            margin-left: 2px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        /* แถบเมนู */
+        .menu-bar {
+            display: flex;
+            padding: 2px 0;
+            background-color: #c0c0c0;
+            border-bottom: 1px solid #808080;
+        }
+
+        .menu-item {
+            padding: 2px 8px;
+            cursor: default;
+            position: relative;
+        }
+
+        .menu-item:hover {
+            background-color: #000080;
+            color: white;
+        }
+
+        /* Dropdown */
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #c0c0c0;
+            min-width: 120px;
+            box-shadow: 2px 2px 0px #000;
+            z-index: 10;
+            border: 1px solid #000;
+            top: 100%;
+            left: 0;
+        }
+
+        .menu-item:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content div {
+            color: black;
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        .dropdown-content div:hover {
+            background-color: #000080;
+            color: white;
+        }
+
+        /* พื้นที่พิมพ์ */
+        .textarea-container {
+            background-color: white;
+            margin: 2px;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #dfdfdf;
+            border-bottom: 2px solid #dfdfdf;
+        }
+
+        textarea {
+            width: 100%;
+            height: 400px;
+            border: none;
+            outline: none;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            display: block;
+            box-sizing: border-box;
+            user-select: text;
+        }
+
+        .status-bar {
+            display: flex;
+            margin-top: 2px;
+            gap: 2px;
+        }
+
+        .status-field {
+            flex: 1;
+            padding: 2px 5px;
+            border-top: 1px solid #808080;
+            border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff;
+            border-bottom: 1px solid #ffffff;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="window" id="notepad-window">
+    <div class="title-bar" id="window-header">
+        <span>Notepad Online</span>
+        <div class="title-bar-controls">
+            <button>_</button>
+            <button>▢</button>
+            <button onclick="location.reload()">×</button>
+        </div>
+    </div>
+
+    <div class="menu-bar">
+        <div class="menu-item" onclick="saveFile()"><u>F</u>ile</div>
+        <div class="menu-item">
+            <u>F</u>ormat
+            <div class="dropdown-content">
+                <div onclick="changeFontSize('12px')">Small (12px)</div>
+                <div onclick="changeFontSize('16px')">Medium (16px)</div>
+                <div onclick="changeFontSize('24px')">Large (24px)</div>
+                <hr style="margin:0; border:0; border-top:1px solid #808080;">
+                <div onclick="changeBgColor('#ffffff')">White Paper</div>
+                <div onclick="changeBgColor('#ffffca')">Yellow Paper</div>
+            </div>
+        </div>
+        <div class="menu-item" onclick="alert('Notepad Online v1.1\nCentered Edition')"><u>H</u>elp</div>
+    </div>
+
+    <div class="textarea-container">
+        <textarea id="editor" spellcheck="false"></textarea>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-field" id="stat-text">Line 1, Col 1</div>
+        <div class="status-field">Win95 UI</div>
+    </div>
+</div>
+
+<script>
+    const win = document.getElementById("notepad-window");
+    const header = document.getElementById("window-header");
+    const editor = document.getElementById("editor");
+
+    // ระบบลากยังทำงานได้แม้จะอยู่ตรงกลาง
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    header.onmousedown = function(e) {
+        isDragging = true;
+        // ปรับตำแหน่งเป็น absolute ทันทีที่เริ่มลาก เพื่อไม่ให้ติด flex ของ body
+        win.style.position = 'absolute';
+        offsetX = e.clientX - win.getBoundingClientRect().left;
+        offsetY = e.clientY - win.getBoundingClientRect().top;
+        
+        // เซ็ตตำแหน่งปัจจุบันให้คงที่ก่อนเริ่มขยับ
+        win.style.left = (e.clientX - offsetX) + 'px';
+        win.style.top = (e.clientY - offsetY) + 'px';
+        win.style.transform = 'none'; // ล้างการจัดกึ่งกลางของ flex ออก
+    };
+
+    document.onmousemove = function(e) {
+        if (!isDragging) return;
+        win.style.left = (e.clientX - offsetX) + 'px';
+        win.style.top = (e.clientY - offsetY) + 'px';
+        win.style.margin = '0';
+    };
+
+    document.onmouseup = function() {
+        isDragging = false;
+    };
+
+    function changeFontSize(size) { editor.style.fontSize = size; }
+    function changeBgColor(color) { editor.style.backgroundColor = color; }
+    
+    function saveFile() {
+        const text = editor.value;
+        const blob = new Blob([text], {type: 'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'notepad.txt';
+        a.click();
+    }
+</script>
+
+</body>
+</html>
+
